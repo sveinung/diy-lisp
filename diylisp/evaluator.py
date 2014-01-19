@@ -12,25 +12,25 @@ def evaluate(ast, env):
     """Evaluate an Abstract Syntax Tree in the specified environment."""
     if is_integer(ast):
         return ast
-    if ast[0] == "quote":
+    elif ast[0] == "quote":
         return ast[1]
-    if ast[0] == "atom":
+    elif ast[0] == "atom":
         return atom(ast[1], env)
-    if ast[0] == "eq":
+    elif ast[0] == "eq":
         first = evaluate(ast[1], env)
         second = evaluate(ast[2], env)
         return first == second
-    if ast[0] == "+":
+    elif ast[0] == "+":
         return do_math(ast, op.add, env)
-    if ast[0] == "-":
+    elif ast[0] == "-":
         return do_math(ast, op.sub, env)
-    if ast[0] == "/":
+    elif ast[0] == "/":
         return do_math(ast, op.div, env)
-    if ast[0] == "*":
+    elif ast[0] == "*":
         return do_math(ast, op.mul, env)
-    if ast[0] == "mod":
+    elif ast[0] == "mod":
         return do_math(ast, op.mod, env)
-    if ast[0] == ">":
+    elif ast[0] == ">":
         return do_math(ast, op.gt, env)
     else:
         raise NotImplementedError(ast)
