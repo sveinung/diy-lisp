@@ -10,17 +10,18 @@ def parse(source):
 
     if source == "#t":
         return True
+
     elif source == "#f":
         return False
+
     elif source.isdigit():
         return int(source)
+
     elif source[0] == "(":
         closing_paren_index = find_matching_paren(source)
         subexpressions = split_exps(source[1:closing_paren_index])
-
         return [parse(subexpression) for subexpression in subexpressions]
-
-        return exp_symbols
+        
     else:
         return source
 
