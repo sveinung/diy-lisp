@@ -8,6 +8,10 @@ def parse(source):
     """Parse string representation of one single expression
     into the corresponding Abstract Syntax Tree"""
 
+    exp, rest = first_expression(source)
+    if rest:
+        raise LispError('Expected EOF')
+
     if source == "#t":
         return True
 
