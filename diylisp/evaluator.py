@@ -41,9 +41,11 @@ def atom(exp, env):
     return not is_list(evaluate(exp, env))
 
 def do_math(ast, operator, env):
-    if not is_integer(ast[1]) or not is_integer(ast[2]):
+    first = evaluate(ast[1], env)
+    second = evaluate(ast[2], env)
+    if not is_integer(first) or not is_integer(second):
         raise LispError
-    return operator(evaluate(ast[1], env), evaluate(ast[2], env))
+    return operator(first, second)
 
 def do_if(ast, env):
     if evaluate(ast[1], env):
