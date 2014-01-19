@@ -8,26 +8,32 @@ def parse(source):
     """Parse string representation of one single expression
     into the corresponding Abstract Syntax Tree"""
 
-    exp, rest = first_expression(source)
+    source = remove_comments(source)
+
+    expression, rest = first_expression(source)
     if rest:
         raise LispError('Expected EOF')
 
-    if source == "#t":
+    if expression == "#t":
         return True
 
-    elif source == "#f":
+    elif expression == "#f":
         return False
 
-    elif source.isdigit():
-        return int(source)
+    elif expression.isdigit():
+        return int(expression)
 
-    elif source[0] == "(":
-        closing_paren_index = find_matching_paren(source)
-        subexpressions = split_exps(source[1:closing_paren_index])
+    elif expression[0] == "'":
+        return ["quote", parse(expression[1:])]
+
+    elif expression[0] == "(":
+        closing_paren_index = find_matching_paren(expression)
+        subexpressions = split_exps(expression[1:closing_paren_index])
+
         return [parse(subexpression) for subexpression in subexpressions]
-        
+
     else:
-        return source
+        return expression
 
 def parse_multiple(source):
     """Creates a list of ASTs from program source constituting multiple expressions"""
