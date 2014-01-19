@@ -23,33 +23,24 @@ def is_atom(x):
 
 class Lambda:
     def __init__(self, params, body, env):
-        self.params = params
-        self.body = body
-        self.env = env
+        raise LispError("DIY")
 
     def __str__(self):
-        return "<lambda/%d>" % len(self.params)
+        raise LispError("DIY")
 
 class Environment:
     def __init__(self, variables=None):
-        self.bindings = variables if variables else {}
+        pass
+        # DIY
 
     def set(self, symbol, value):
-        self.bindings[symbol] = value
+        raise LispError("DIY")
 
     def extend(self, variables):
-        new_bindings = self.bindings.copy()
-        new_bindings.update(variables)
-        print new_bindings
-        return Environment(new_bindings)
+        raise LispError("DIY")
 
     def lookup(self, symbol):
-        print symbol
-        print self.bindings
-        if symbol in self.bindings:
-            return self.bindings[symbol]
-        else:
-            raise LispError("Variable '%s' is undefined" % symbol)
+        raise LispError("DIY")
 
 class LispError(Exception): 
     pass
