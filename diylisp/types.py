@@ -34,7 +34,9 @@ class Environment:
         # DIY
 
     def set(self, symbol, value):
-        raise LispError("DIY")
+        if symbol in self.bindings:
+            raise LispError("Variable '%s' is already defined." % symbol)
+        self.bindings[symbol] = value
 
     def extend(self, variables):
         raise LispError("DIY")
