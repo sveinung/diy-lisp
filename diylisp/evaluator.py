@@ -32,6 +32,8 @@ def evaluate(ast, env):
         return do_math(ast, op.mod, env)
     elif ast[0] == ">":
         return do_math(ast, op.gt, env)
+    elif ast[0] == "if":
+        return do_if(ast, env)
     else:
         raise NotImplementedError(ast)
 
@@ -40,3 +42,9 @@ def atom(exp, env):
 
 def do_math(ast, operator, env):
     return operator(evaluate(ast[1], env), evaluate(ast[2], env))
+
+def do_if(ast, env):
+    if evaluate(ast[1], env):
+        return evaluate(ast[2], env)
+    else:
+        return evaluate(ast[3], env)
