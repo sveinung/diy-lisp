@@ -38,6 +38,10 @@ def evaluate(ast, env):
         return closure(ast, env)
     elif ast[0] == "cons":
         return cons(ast, env)
+    elif ast[0] == "car":
+        return car(ast, env)
+    elif ast[0] == "cdr":
+        return cdr(ast, env)
     elif is_closure(ast[0]):
         return evaluate_closure(ast, env)
     elif is_list(ast):
@@ -85,6 +89,20 @@ def cons(ast, env):
     else:
         tail = evaluate(ast[2], env)
     return [evaluate(ast[1], env)] + tail
+
+def car(ast, env):
+    evaluated_list = evaluate(ast[1], env)
+    if not evaluated_list:
+        raise LispError
+    else:
+        return evaluated_list[0]
+
+def cdr(ast, env):
+    evaluated_list = evaluate(ast[1], env)
+    if not evaluated_list:
+        return "nil"
+    else:
+        return evaluated_list[1:]
 
 def evaluate_closure(ast, env):
     closure = ast[0]
