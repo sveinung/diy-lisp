@@ -34,6 +34,10 @@ def evaluate(ast, env):
         return do_if(ast, env)
     elif ast[0] == "define":
         define(ast, env)
+    elif ast[0] == "lambda":
+        return closure(ast, env)
+    elif is_closure(ast[0]):
+        return evaluate_closure(ast, env)
     else:
         return env.lookup(ast)
 
@@ -58,10 +62,24 @@ def define(ast, env):
         raise LispError("Wrong number of arguments")
 
     variable_name = ast[1]
-    variable_value = ast[2]
+    variable_value = evaluate(ast[2], env)
 
     if not is_symbol(variable_name):
         raise LispError("non-symbol")
 
     env.set(variable_name, variable_value)
 
+def closure(ast, env):
+    if len(ast) != 3:
+        raise LispError("number of arguments")
+
+    return Closure(ast[1], ast[2], env)
+
+def evaluate_closure(ast, env):
+    closure = ast[0]
+    arguments = [evaluate(argument, env) for argument in ast[1:]]
+
+    closure_assignments = dict(zip(closure.params, arguments))
+    closure_assignments_with_closure_env = closure.env.extend(closure_assignments)
+
+    return evaluate(closure.body, env.extend(closure_assignments_with_closure_env.variables))

@@ -13,7 +13,12 @@ class LispError(Exception):
 
 class Closure:
     def __init__(self, params, body, env):
-        raise LispError("DIY")
+        if not isinstance(params, list):
+            raise LispError
+
+        self.params = params
+        self.body = body
+        self.env = env
 
     def __str__(self):
         raise LispError("DIY")
@@ -24,7 +29,6 @@ class Environment:
         self.variables = variables if variables else {}
 
     def set(self, symbol, value):
-        print self.variables
         if symbol in self.variables:
             raise LispError("already defined")
 
