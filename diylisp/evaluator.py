@@ -34,8 +34,10 @@ def evaluate(ast, env):
         return do_math(ast, op.gt, env)
     elif ast[0] == "if":
         return do_if(ast, env)
+    elif ast[0] == "define":
+        define(ast, env)
     else:
-        raise NotImplementedError(ast)
+        return env.lookup(ast)
 
 def atom(exp, env):
     return not is_list(evaluate(exp, env))
@@ -52,3 +54,15 @@ def do_if(ast, env):
         return evaluate(ast[2], env)
     else:
         return evaluate(ast[3], env)
+
+def define(ast, env):
+    if len(ast) != 3:
+        raise LispError("Wrong number of arguments")
+
+    variable_name = ast[1]
+    variable_value = ast[2]
+
+    if not is_symbol(variable_name):
+        raise LispError("non-symbol")
+
+    env.set(variable_name, variable_value)

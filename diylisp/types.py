@@ -30,19 +30,28 @@ class Lambda:
 
 class Environment:
     def __init__(self, variables=None):
-        pass
-        # DIY
+        self.variables = variables if variables else {}
 
     def set(self, symbol, value):
-        if symbol in self.bindings:
-            raise LispError("Variable '%s' is already defined." % symbol)
-        self.bindings[symbol] = value
+        print self.variables
+        if symbol in self.variables:
+            raise LispError("already defined")
+
+        self.variables[symbol] = value
 
     def extend(self, variables):
-        raise LispError("DIY")
+        copiedVariables = self.variables.copy()
+        copiedVariables.update(variables)
+        return Environment(copiedVariables)
 
     def lookup(self, symbol):
-        raise LispError("DIY")
+        if symbol not in self.variables:
+            raise LispError(symbol)
+
+        return self.variables[symbol]
+
+    def __str__(self):
+        return str(self.variables)
 
 class LispError(Exception): 
     pass
