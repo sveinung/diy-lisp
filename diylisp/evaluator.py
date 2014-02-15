@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from types import Environment
-from types import LispError
-from types import Lambda
-from types import is_boolean, is_atom, is_symbol, is_list, is_lambda, is_integer
+from types import Environment, LispError, Closure
+from ast import is_boolean, is_atom, is_symbol, is_list, is_closure, is_integer
 from asserts import assert_exp_length, assert_valid_definition, assert_boolean
 from parser import unparse
 import operator as op
@@ -66,3 +64,4 @@ def define(ast, env):
         raise LispError("non-symbol")
 
     env.set(variable_name, variable_value)
+

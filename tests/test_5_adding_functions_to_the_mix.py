@@ -1,125 +1,233 @@
 # -*- coding: utf-8 -*-
 
 from nose.tools import assert_equals, assert_raises_regexp, \
-    assert_raises, assert_false, assert_is_instance
+    assert_raises, assert_true, assert_false, assert_is_instance
 
 from diylisp.interpreter import interpret
+from diylisp.ast import is_list
 from diylisp.evaluator import evaluate
 from diylisp.parser import parse
-from diylisp.types import Lambda, LispError, Environment
+from diylisp.types import Closure, LispError, Environment
 
-class TestEval:
+"""
+This part is all about defining and using functions.
 
-    # Test working with functions
+We'll start by implementing the `lambda` form which is used to create function closures.
+"""
 
-    def test_lambda_evaluates_to_lambda(self):
-        """The lambda form should evaluate to a lambda object extending closure"""
+def test_lambda_evaluates_to_lambda():
+    """The lambda form should evaluate to a Closure"""
 
-        ast = ["lambda", [], 42]
-        lm = evaluate(ast, Environment())
-        assert_is_instance(lm, Lambda) 
+    ast = ["lambda", [], 42]
+    closure = evaluate(ast, Environment())
+    assert_is_instance(closure, Closure) 
 
-    def test_lambda_closure_keeps_defining_env(self):
-        """The closure should keep a copy of the environment where it was defined"""
+def test_lambda_closure_keeps_defining_env():
+    """The closure should keep a copy of the environment where it was defined.
 
-        env = Environment({"foo": 1, "bar": 2})
-        ast = ["lambda", [], 42]
-        lm = evaluate(ast, env)
-        assert_equals(lm.env, env) 
+    Once we start calling functions later, we'll need access to the environment
+    from when the function was created in order to resolve all free variables."""
 
-    def test_lambda_closure_holds_function(self):
-        "The function part of the lambda closure is the parameters and the body"
+    env = Environment({"foo": 1, "bar": 2})
+    ast = ["lambda", [], 42]
+    closure = evaluate(ast, env)
+    assert_equals(closure.env, env) 
 
-        params = ["x", "y"]
-        body = ["+", "x", "y"]
-        ast = ["lambda", params, body]
-        lm = evaluate(ast, Environment)
-        assert_equals(lm.params, params)
-        assert_equals(lm.body, body)
+def test_lambda_closure_holds_function():
+    """The closure contains the parameter list and function body too."""    
 
-    def test_call_to_non_function(self):
-        "Should raise a TypeError when a non-closure is called as a function"
-        
-        with assert_raises(LispError):
-            evaluate([True, 1, 2], Environment())
-        with assert_raises(LispError):
-            evaluate(["foo", 1, 2], Environment({"foo": 42}))
-
-    def test_calling_with_wrong_number_of_arguments(self):
-        """Lambda should raise exception when called with wrong number of arguments"""
-
-        env = Environment()
-        evaluate(["define", "fn", ["lambda", ["x", "y"], 42]], env)
-        with assert_raises_regexp(LispError, "expected 2"):
-            evaluate(["fn", 1], env)
-
-    def test_calling_simple_function(self):
-        assert_equals(42, evaluate([["lambda", [], 42]], Environment()))
-
-    def test_defining_lambda_with_error(self):
-        """Tests that the lambda body is not being evaluated when the lambda
-        is evaluated or defined. (It should first be evaluated when the function
-        is later invoced.)"""
+    closure = evaluate(parse("(lambda (x y) (+ x y))"), Environment())
     
-        ast = parse("""
-            (define fn-with-error
-                (lambda (x y)
-                    (function body that would never work)))
-        """)
-        evaluate(ast, Environment())
+    assert_equals(["x", "y"], closure.params)
+    assert_equals(["+", "x", "y"], closure.body)
 
-    def test_lambda_with_free_var(self):
-        """Tests that the lambda have access to variables 
-        from the environment in which it was defined"""
+def test_lambda_arguments_are_lists():
+    """The parameters of a `lambda` should be a list."""
 
-        env = Environment({"free-variable": 100})
-        ast = [["lambda", [], "free-variable"]]
-        assert_equals(100, evaluate(ast, env))
+    closure = evaluate(parse("(lambda (x y) (+ x y))"), Environment())
+    assert_true(is_list(closure.params))
 
-    def test_lambda_with_argument(self):
-        """Test that the arguments are included in the environment when 
-        the function body is evaluated"""
+    with assert_raises(LispError):
+        evaluate(parse("(lambda not-a-list (body of fn))"), Environment())
 
-        ast = [["lambda", ["x"], "x"], 42]
-        assert_equals(42, evaluate(ast, Environment()))
+def test_lambda_number_of_arguments():
+    """The `lambda` form should expect exactly two arguments."""
 
-    def test_lambda_with_argument_and_env(self):
-        """Test that arguments overshadow variables defined in the environment
-        when the function body is evaluated"""
+    with assert_raises_regexp(LispError, "number of arguments"):
+        evaluate(parse("(lambda (foo) (bar) (baz))"), Environment())
 
-        env = Environment({"x": 1})
-        ast = [["lambda", ["x"], "x"], 2]
-        assert_equals(2, evaluate(ast, env))
+def test_defining_lambda_with_error_in_body():
+    """The function body should not be evaluated when the lambda is defined.
 
-    def test_defining_then_looking_up_function(self):
-        """Test calling named function that's been previously defined 
-        from the environment"""
+    The call to `lambda` should return a function closure holding, among other things
+    the function body. The body should not be evaluated before the function is called."""
 
-        env = Environment()
-        evaluate(["define", "my-fn", ["lambda", ["x"], "x"]], env)
-        assert_equals(42, evaluate(["my-fn", 42], env))
+    ast = parse("""
+            (lambda (x y)
+                (function body ((that) would never) work))
+    """)
+    assert_is_instance(evaluate(ast, Environment()), Closure)
 
-    def test_calling_function_recursively(self):
-        """Tests that a named function is included in the environment
-        where it is evaluated"""
-        
-        oposite = """
-            (define oposite
-                (lambda (p) 
-                    (if p #f #t)))
-        """
-        fn = """ 
-            (define fn 
-                ;; Meaningless (albeit recursive) function
-                (lambda (x) 
-                    (if x 
-                        (fn (oposite x))
-                        1000)))
-        """
-        
-        env = Environment()
-        evaluate(parse(oposite), env)
-        evaluate(parse(fn), env)
+"""
+Now that we have the `lambda` form implemented, lets see if we can call some functions.
 
-        assert_equals(1000, evaluate(["fn", True], env))
-        assert_equals(1000, evaluate(["fn", False], env))
+When evaluating ASTs which are lists, if the first element isn't one of the special forms
+we have been working with so far, it is a function call. The first element of the list is 
+the function, and the rest of the elements are arguments.
+"""
+
+def test_evaluating_call_to_closure():
+    """The first case we'll handle is when the AST is a list with an actual closure
+    as the first element.
+
+    In this first test, we'll start with a closure with no arguments and no free 
+    variables. All we need to do is to evaluate and return the function body."""
+
+    closure = evaluate(parse("(lambda () (+ 1 2))"), Environment())
+    ast = [closure]
+    result = evaluate(ast, Environment())
+    assert_equals(3, result)
+
+def test_evaluating_call_to_closure_with_arguments():
+    """The function body must be evaluated in an environment where the parmeters are bound.
+
+    Create an environment where the function parameters (which are stored in the closure)
+    are bound to the actual argument values in the function call. Use this environment
+    when evaluating the function body."""
+
+    env = Environment()
+    closure = evaluate(parse("(lambda (a b) (+ a b))"), env)
+    ast = [closure, 4, 5]
+
+    assert_equals(9, evaluate(ast, env))
+
+def test_call_to_function_should_evaluate_arguments():
+    """Call to function should evaluate all arguments.
+
+    When a function is applied, the arguments should be evaluated before being bound
+    to the parameter names."""
+
+    env = Environment()
+    closure = evaluate(parse("(lambda (a) (+ a 5))"), env)
+    ast = [closure, parse("(if #f 0 (+ 10 10))")]
+
+    assert_equals(25, evaluate(ast, env))
+
+def test_evaluating_call_to_closure_with_free_variables():
+    """The body should be evaluated in the environment from the closure.
+
+    The function's free variables, i.e. those not specified as part of the parameter list,
+    should be looked up in the environment from where the function was defined. This is
+    the environment included in the closure. Make sure this environment is used when
+    evaluating the body."""
+
+    closure = evaluate(parse("(lambda (x) (+ x y))"), Environment({"y": 1}))
+    ast = [closure, 0]
+    result = evaluate(ast, Environment({"y": 2}))
+    assert_equals(1, result)
+
+
+"""
+Okay, now we're able to evaluate ASTs with closures as the first element. But normally
+the closures don't just happen to be there all by themselves. Generally we'll finde some
+expression, evaluate it to a closure, and then evaluate a new AST with the closure just
+like we did above.
+
+(some-exp arg1 arg2 ...) -> (closure arg1 arg2 ...) -> result-of-function-call
+
+"""
+
+def test_calling_very_simple_function_in_environment():
+    """A call to a symbol corresponds to a call to its value in the environment.
+
+    When a symbol is the first element of the AST list, it is resolved to its value in
+    the environment (which should be a function closure). An AST with the variables
+    replaced with its value should then be evaluated instead."""
+
+    env = Environment()
+    evaluate(parse("(define add (lambda (x y) (+ x y)))"), env)
+    assert_is_instance(env.lookup("add"), Closure)
+
+    result = evaluate(parse("(add 1 2)"), env)
+    assert_equals(3, result)
+
+def test_calling_lambda_directly():
+    """It should be possible to define and call functions directly.
+
+    A lambda definition in the call position of an AST should be evaluated, and then
+    evaluated as before."""
+
+    ast = parse("((lambda (x) x) 42)")
+    result = evaluate(ast, Environment())
+    assert_equals(42, result)
+
+def test_calling_complex_expression_which_evaluates_to_function():
+    """Actually, all ASTs that are not atoms should be evaluated and then called.
+
+    In this test, a call is done to the if-expression. The `if` should be evaluated,
+    which will result in a `lambda` expression. The lambda is evaluated, giving a 
+    closure. The result is an AST with a `closure` as the first element, which we
+    already know how to evaluate."""
+
+    ast = parse("""
+        ((if #f
+             wont-evaluate-this-branch
+             (lambda (x) (+ x y)))
+         2)
+    """)
+    env = Environment({'y': 3})
+    assert_equals(5, evaluate(ast, env))
+
+
+"""
+Now that we have the happy cases working, let's see what should happen when 
+function calls are done incorrectly.
+"""
+
+def test_calling_atom_raises_exception():
+    """A function call to an atom should result in an error."""
+
+    with assert_raises_regexp(LispError, "not a function"):
+        evaluate(parse("(#t 'foo 'bar)"), Environment())
+
+    with assert_raises_regexp(LispError, "not a function"):
+        evaluate(parse("(42)"), Environment())
+
+def test_calling_with_wrong_number_of_arguments():
+    """Functions should raise exceptions when called with wrong number of arguments."""
+
+    env = Environment()
+    evaluate(parse("(define fn (lambda (p1 p2) 'whatwever))"), env)
+    error_msg = "wrong number of arguments, expected 2 got 3"
+    with assert_raises_regexp(LispError, error_msg):
+        evaluate(parse("(fn 1 2 3)"), env)
+
+
+"""
+One final test to see that recursive functions are working as expected. 
+The good news: this should already be working by now :)
+"""
+
+def test_calling_function_recursively():
+    """Tests that a named function is included in the environment
+    where it is evaluated."""
+    
+
+    env = Environment()
+    evaluate(parse("""
+        (define oposite
+            (lambda (p) 
+                (if p #f #t)))
+    """), env)
+
+    evaluate(parse("""
+        (define fn 
+            ;; Recursive, but meaningless, function
+            (lambda (x) 
+                (if x 
+                    (fn (oposite x))
+                    1000)))
+    """), env)
+
+    assert_equals(1000, evaluate(parse("(fn #t)"), env))
+    assert_equals(1000, evaluate(parse("(fn #f)"), env))

@@ -1,27 +1,17 @@
 # -*- coding: utf-8 -*-
 
-def is_symbol(x):
-    return isinstance(x, str)
+"""
+This module holds some types we'll have use for along the way.
 
-def is_list(x):
-    return isinstance(x, list)
+It's your job to implement the Closure and Environment types.
+The LispError class you can have for free :)
+"""
 
-def is_boolean(x):
-    return isinstance(x, bool)
+class LispError(Exception): 
+    """General lisp error class."""
+    pass
 
-def is_integer(x):
-    return isinstance(x, int)
-
-def is_lambda(x):
-    return isinstance(x, Lambda)
-
-def is_atom(x):
-    return is_symbol(x) \
-        or is_integer(x) \
-        or is_boolean(x) \
-        or is_lambda(x)
-
-class Lambda:
+class Closure:
     def __init__(self, params, body, env):
         raise LispError("DIY")
 
@@ -29,6 +19,7 @@ class Lambda:
         raise LispError("DIY")
 
 class Environment:
+
     def __init__(self, variables=None):
         self.variables = variables if variables else {}
 
@@ -55,4 +46,3 @@ class Environment:
 
 class LispError(Exception): 
     pass
-
