@@ -36,6 +36,8 @@ def evaluate(ast, env):
         define(ast, env)
     elif ast[0] == "lambda":
         return closure(ast, env)
+    elif ast[0] == "cons":
+        return cons(ast, env)
     elif is_closure(ast[0]):
         return evaluate_closure(ast, env)
     elif is_list(ast):
@@ -76,6 +78,13 @@ def closure(ast, env):
         raise LispError("number of arguments")
 
     return Closure(ast[1], ast[2], env)
+
+def cons(ast, env):
+    if evaluate(ast[2], env) == "nil":
+        tail = []
+    else:
+        tail = evaluate(ast[2], env)
+    return [evaluate(ast[1], env)] + tail
 
 def evaluate_closure(ast, env):
     closure = ast[0]
