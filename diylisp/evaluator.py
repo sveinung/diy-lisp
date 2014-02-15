@@ -38,6 +38,8 @@ def evaluate(ast, env):
         return closure(ast, env)
     elif is_closure(ast[0]):
         return evaluate_closure(ast, env)
+    elif is_list(ast):
+        return evaluate_function(ast, env)
     else:
         return env.lookup(ast)
 
@@ -79,7 +81,25 @@ def evaluate_closure(ast, env):
     closure = ast[0]
     arguments = [evaluate(argument, env) for argument in ast[1:]]
 
+    actual = len(arguments)
+    expected = len(closure.params)
+    if actual != expected:
+        raise LispError("wrong number of arguments, expected " + str(expected) + " got " + str(actual))
+
     closure_assignments = dict(zip(closure.params, arguments))
     closure_assignments_with_closure_env = closure.env.extend(closure_assignments)
 
     return evaluate(closure.body, env.extend(closure_assignments_with_closure_env.variables))
+
+def evaluate_function(ast, env):
+    if is_list(ast[0]):
+        function = evaluate(ast[0], env)
+        return do_function(function, ast, env)
+    elif ast[0] in env.variables:
+        function = env.lookup(ast[0])
+        return do_function(function, ast, env)
+    else:
+        raise LispError("not a function")
+
+def do_function(function, ast, env):
+    return evaluate([function] + ast[1:], env)
